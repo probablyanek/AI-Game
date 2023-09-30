@@ -1,5 +1,13 @@
 import pygame
 import sys
+import random
+import time, os
+
+def nextCoord():
+    # Generate a random coordinate
+    x = random.randint(1, 50)
+    y = random.randint(1, 50)
+    return (x, y)
 
 class Character:
     def __init__(self, grid_size):
@@ -34,39 +42,74 @@ class Character:
         # Draw a box around the allowed area
         pygame.draw.rect(screen, (0, 255, 0), (self.grid_size, self.grid_size, 50 * self.grid_size, 50 * self.grid_size), 1)
 
+class MovingObject(Character):
+    def update_position(self):
+        self.set_position(*nextCoord())
+
+def check_collision(red, blue):
+    return red.x == blue.x and red.y == blue.y
+
 
 def main():
     pygame.init()
     screen = pygame.display.set_mode((700, 700))
+    game_over_image = pygame.image.load(os.path.join(os.path.dirname(__file__), "game_over.png"))
+    game_over_image = pygame.transform.scale(game_over_image, (700, 700))
+
     clock = pygame.time.Clock()
 
     character = Character(10)
     character.set_appearance((255, 0, 0))  # Set color to red
     character.set_position(5, 5)
 
-    # Dictionary to keep track of key states
-    keys = {pygame.K_UP: False, pygame.K_DOWN: False, pygame.K_LEFT: False, pygame.K_RIGHT: False}
+    moving_object = MovingObject(10)
+    moving_object.set_appearance((0, 0, 255))  # Set color to blue
+    moving_object.set_position(25, 21)  # Centered at middle of screen
+
+    last_blue_update_time = pygame.time.get_ticks()  # Get the current time
 
     while True:
+        current_time = pygame.time.get_ticks()  # Get the current time
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-            if event.type == pygame.KEYDOWN:
-                if event.key in keys:
-                    keys[event.key] = True
+        dx = 0
+        dy = 0
 
-            if event.type == pygame.KEYUP:
-                if event.key in keys:
-                    keys[event.key] = False
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP]:
+            dy = -1
+        elif keys[pygame.K_DOWN]:
+            dy = 1
+        if keys[pygame.K_LEFT]:
+            dx = -1
+        elif keys[pygame.K_RIGHT]:
+            dx = 1
 
-        dx = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT])  # Calculate x movement
-        dy = (keys[pygame.K_DOWN] - keys[pygame.K_UP])  # Calculate y movement
         character.move(dx, dy)
-
         screen.fill((0, 0, 0))  # Fill screen with black
         character.draw(screen)
+
+        moving_object.draw(screen)
+
+        if current_time - last_blue_update_time >= 1000:  # Check if one second has passed
+            moving_object.update_position()  # Update blue's position
+            last_blue_update_time = current_time  # Update last update time
+
+        pygame.draw.rect(screen, (0, 255, 0), (character.grid_size, character.grid_size, 50 * character.grid_size, 50 * character.grid_size), 1)
+
+        if check_collision(character, moving_object):
+            screen.fill((0, 0, 0))  # Fill screen with black
+            screen.blit(game_over_image, (0, 0))
+            pygame.display.flip()
+
+            pygame.time.wait(30000)  # Wait for 3 seconds (3000 milliseconds)
+            pygame.quit()
+            sys.exit()
+
         pygame.display.flip()
         clock.tick(60)
 
