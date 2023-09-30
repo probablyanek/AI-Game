@@ -24,18 +24,28 @@ class Character:
         new_y = self.y + dy
         
         # Check if the new position is within the grid
-        if 1 <= new_x < 9 and 1 <= new_y < 9:  # Adjusted bounds
+        if 1 <= new_x < 51 and 1 <= new_y < 51:  # Adjusted bounds
             self.x = new_x
             self.y = new_y
 
+    def draw(self, screen):
+        screen.blit(self.image, (self.x * self.grid_size, self.y * self.grid_size))
+        
+        # Draw a box around the allowed area
+        pygame.draw.rect(screen, (0, 255, 0), (self.grid_size, self.grid_size, 50 * self.grid_size, 50 * self.grid_size), 1)
+
+
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((300, 300))
+    screen = pygame.display.set_mode((700, 700))
     clock = pygame.time.Clock()
 
     character = Character(10)
     character.set_appearance((255, 0, 0))  # Set color to red
     character.set_position(5, 5)
+
+    # Dictionary to keep track of key states
+    keys = {pygame.K_UP: False, pygame.K_DOWN: False, pygame.K_LEFT: False, pygame.K_RIGHT: False}
 
     while True:
         for event in pygame.event.get():
@@ -44,18 +54,19 @@ def main():
                 sys.exit()
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    character.move(0, -1)
-                elif event.key == pygame.K_DOWN:
-                    character.move(0, 1)
-                elif event.key == pygame.K_LEFT:
-                    character.move(-1, 0)
-                elif event.key == pygame.K_RIGHT:
-                    character.move(1, 0)
+                if event.key in keys:
+                    keys[event.key] = True
+
+            if event.type == pygame.KEYUP:
+                if event.key in keys:
+                    keys[event.key] = False
+
+        dx = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT])  # Calculate x movement
+        dy = (keys[pygame.K_DOWN] - keys[pygame.K_UP])  # Calculate y movement
+        character.move(dx, dy)
 
         screen.fill((0, 0, 0))  # Fill screen with black
         character.draw(screen)
-        pygame.draw.rect(screen, (0, 0, 255), (0, 0, 100, 100), 1)  # Draw perimeter wall
         pygame.display.flip()
         clock.tick(60)
 
